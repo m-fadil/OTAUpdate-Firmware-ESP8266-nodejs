@@ -32,10 +32,11 @@ async function runESP() {
             client.publish(`OTAUpdate/klien/${clientId}`, bar.toString())
             if (bar == 100) clearInterval(updating)
             bar += 10
-        }, 1500)
+        }, 1000)
     }
       
     client.on('connect', () => {
+        console.clear()
         console.log('Connected')
         client.subscribe(topic, () => {
             console.log(`Subscribe to topic '${topic}'`)

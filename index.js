@@ -19,6 +19,7 @@ async function startKlien() {
     })
 
     function cekESP() {
+        ESPList.length = 0
         return new Promise((resolve, reject) => {
             client.subscribe(klien_topic)
             client.publish("OTAUpdate/esp", "cek")
@@ -28,17 +29,19 @@ async function startKlien() {
         })
     }
 
-    async function updating(topic, message) {
-        updatingList[topic] = message.toString()
+    async function updating(esp, message) {
+        updatingList[esp] = message.toString()
         console.clear()
-        console.log(`[${'#'.repeat(Math.round(Number(message)/5))}${'.'.repeat(20-Math.round(Number(message)/5))}] - ${message}%`)
-        if (message == "100") {
+        Object.entries(updatingList).forEach(([key, value]) => {
+            console.log(`${key}\n[${'#'.repeat(Math.round(Number(value)/5))}${'.'.repeat(20-Math.round(Number(value)/5))}] - ${value}%\n`)
+        });
+        if (Object.values(updatingList).every(value => value == "100")) {
             prompt("Tekan ENTER untuk melanjutkan...")
             menu()
         }
     } 
     
-    async function updateTunggal() {
+    async function updateSatuan() {
         await cekESP()
         console.clear()
         for (const [index, value] of ESPList.entries()) {
@@ -49,17 +52,25 @@ async function startKlien() {
         if (pilih == 0) {
             menu()
         } else {
-            client.subscribe(`OTAUpdate/klien/${ESPList[pilih-1]}`)
-            client.publish("OTAUpdate/esp", ESPList[pilih-1])
+            if (pilih.length <= 1) {
+                client.subscribe(`OTAUpdate/klien/${ESPList[pilih - 1]}`)
+                client.publish("OTAUpdate/esp", ESPList[pilih - 1])
+            } else {
+                let urutan = new Set(pilih.split(" ").join("").split(","))
+                urutan.forEach((i) => {
+                    client.subscribe(`OTAUpdate/klien/${ESPList[i - 1]}`)
+                    client.publish("OTAUpdate/esp", ESPList[i - 1])
+                })
+            }
         }
     }
     
     function menu() {
-        console.clear();
+        console.clear()
         console.log("1. Update per-satu ESP\n9. Kembali\n0. Keluar")
         let pilih = prompt("-> ")
         if (pilih == 1) {
-            updateTunggal()
+            updateSatuan()
         }
         else if (pilih == 0) {
             process.exit(0)
@@ -78,7 +89,7 @@ async function startKlien() {
             ESPList.push(strMessage)
         }
         else if (ESPList.includes(topic.split("OTAUpdate/klien/")[1])) {
-            updating(topic, strMessage)
+            updating(topic.split("OTAUpdate/klien/")[1], strMessage)
         }
     })
 }

@@ -3,7 +3,7 @@ const mqtt = require("mqtt");
 const protocol = 'mqtt'
 const host = "mqtt.eclipseprojects.io"
 const port = '1883'
-const topic = ["klien_cekESP",]
+const topic = ["OTAUpdate/klien",]
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`
 const connectUrl = `${protocol}://${host}:${port}`
 
@@ -18,14 +18,14 @@ client.on('connect', () => {
     client.subscribe(topic, () => {
         console.log(`Subscribe to topic '${topic}'`)
     })
-    const print = setInterval(() => {
-        client.publish(topic[0], 'tes')
-    }, 1000)
+    client.publish('OTAUpdate/esp', 'cek')
 })
 
 client.on('message', (topic, message) => {
+    let msg = JSON.parse(message)
+    console.log(msg)
     // message is a Buffer
-    let strMessage = message.toString();
+    // let strMessage = message.toString();
     // let objMessage = JSON.parse(strMessage);
-    console.log(strMessage);
+    // console.log(strMessage);
 })

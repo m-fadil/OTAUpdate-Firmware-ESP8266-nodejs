@@ -1,11 +1,11 @@
-const mqtt = require("mqtt");
+const mqtt = require('mqtt');
 const prompt = require('prompt-sync')();
 
 async function startKlien() {
     const protocol = 'mqtt'
-    const host = "mqtt.eclipseprojects.io"
+    const host = 'mqtt.eclipseprojects.io'
     const port = '1883'
-    const klien_topic = ["OTAUpdate/klien/cek"]
+    const subsTopic = 'OTAUpdate/klien'
     const ESPList = []
     const updatingList = {}
     
@@ -21,59 +21,55 @@ async function startKlien() {
     function cekESP() {
         ESPList.length = 0
         return new Promise((resolve, reject) => {
-            client.subscribe(klien_topic)
-            client.publish("OTAUpdate/esp", "cek")
+            client.subscribe(subsTopic)
+            client.publish('OTAUpdate/esp', 'check')
             setTimeout(() => {
                 resolve()
-            }, 3000)
+            }, 1500)
         })
     }
 
-    async function updating(esp, message) {
-        updatingList[esp] = message.toString()
+    async function updating(pesan) {
+        updatingList[pesan.espId] = pesan.progress
         console.clear()
         Object.entries(updatingList).forEach(([key, value]) => {
             console.log(`${key}\n[${'#'.repeat(Math.round(Number(value)/5))}${'.'.repeat(20-Math.round(Number(value)/5))}] - ${value}%\n`)
         });
-        if (Object.values(updatingList).every(value => value == "100")) {
-            prompt("Tekan ENTER untuk melanjutkan...")
+        if (Object.values(updatingList).every(value => value == '100')) {
+            var _ = prompt('Tekan ENTER untuk melanjutkan...')
             menu()
         }
     } 
     
-    async function updateSatuan() {
+    async function menu() {
         await cekESP()
         console.clear()
         for (const [index, value] of ESPList.entries()) {
             console.log(`${index + 1}. ${value}`)
         }
-        console.log("0. Kembali\nMasukkan urutan ESP untuk di update")
-        let pilih = prompt("-> ")
+        console.log('\n0. keluar\nMasukkan urutan ESP untuk di update')
+        let pilih = prompt('-> ')
         if (pilih == 0) {
-            menu()
+            process.exit(0)
         } else {
             if (pilih.length <= 1) {
-                client.subscribe(`OTAUpdate/klien/${ESPList[pilih - 1]}`)
-                client.publish("OTAUpdate/esp", ESPList[pilih - 1])
-            } else {
-                let urutan = new Set(pilih.split(" ").join("").split(","))
+                client.publish('OTAUpdate/esp', ESPList[pilih - 1])
+            }else {
+                let urutan = new Set(pilih.split(' ').join('').split(','))
                 urutan.forEach((i) => {
-                    client.subscribe(`OTAUpdate/klien/${ESPList[i - 1]}`)
-                    client.publish("OTAUpdate/esp", ESPList[i - 1])
+                    client.publish('OTAUpdate/esp', ESPList[i - 1])
                 })
             }
         }
     }
-    
-    function menu() {
-        console.clear()
-        console.log("1. Update per-satu ESP\n9. Kembali\n0. Keluar")
-        let pilih = prompt("-> ")
-        if (pilih == 1) {
-            updateSatuan()
+
+    function handling(pesan) {
+        if (pesan.command == 'checked') {
+            process.stdout.write('.')
+            ESPList.push(pesan.espId)
         }
-        else if (pilih == 0) {
-            process.exit(0)
+        else if (pesan.command == 'updating') {
+            updating(pesan)
         }
     }
     
@@ -83,17 +79,10 @@ async function startKlien() {
     })
     
     client.on('message', (topic, message) => {
-        let strMessage = message.toString();
-        if (topic == klien_topic) {
-            process.stdout.write("#")
-            ESPList.push(strMessage)
-        }
-        else if (ESPList.includes(topic.split("OTAUpdate/klien/")[1])) {
-            updating(topic.split("OTAUpdate/klien/")[1], strMessage)
-        }
+        handling(JSON.parse(message))
     })
 }
 
 startKlien().catch((err) => {
-    console.log("Terdapat error: " + err)
+    console.log('Terdapat error: ' + err)
 })

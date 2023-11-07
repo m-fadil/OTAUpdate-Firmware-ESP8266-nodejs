@@ -4,8 +4,9 @@ async function runESP() {
     const protocol = 'mqtt'
     const host = "mqtt.eclipseprojects.io"
     const port = '1883'
+    const version = "1.0"
     const clientId = `ESP-${Math.random().toString(16).toUpperCase().slice(9)}`
-    const topic = ["OTAUpdate/esp"]
+    const subsTopic = "OTAUpdate/esp"
 
     const MAC = (() => {
         const macAddress = [];
@@ -29,17 +30,31 @@ async function runESP() {
         var bar = 0
 
         const updating = setInterval(() => {
-            client.publish(`OTAUpdate/klien/${clientId}`, bar.toString())
+            let pesan = {
+                command: 'updating',
+                espId: clientId,
+                progress: bar.toString(),
+            }
+            client.publish('OTAUpdate/klien', JSON.stringify(pesan))
             if (bar == 100) clearInterval(updating)
             bar += 10
         }, 1000)
+    }
+
+    function cek() {
+        const pesan = {
+            command: "checked",
+            espId: clientId,
+            version: version,
+        }
+        client.publish("OTAUpdate/klien", JSON.stringify(pesan))
     }
       
     client.on('connect', () => {
         console.clear()
         console.log('Connected')
-        client.subscribe(topic, () => {
-            console.log(`Subscribe to topic '${topic}'`)
+        client.subscribe(subsTopic, () => {
+            console.log(`Subscribe to topic '${subsTopic}'`)
         })
         
     })
@@ -49,8 +64,8 @@ async function runESP() {
         let strMessage = message.toString();
         // let objMessage = JSON.parse(strMessage);
         console.log(strMessage);
-        if (strMessage == "cek") {
-            client.publish("OTAUpdate/klien/cek", clientId)
+        if (strMessage == "check") {
+            cek()
         }
         else if (strMessage == clientId) {
             update()

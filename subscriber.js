@@ -4,9 +4,9 @@ async function runESP() {
     const protocol = 'mqtt'
     const host = "mqtt.eclipseprojects.io"
     const port = '1883'
-    const version = "1.0"
     const clientId = `ESP-${Math.random().toString(16).toUpperCase().slice(9)}`
     const subsTopic = "OTAUpdate/esp"
+    let version = 1
 
     const MAC = (() => {
         const macAddress = [];
@@ -36,7 +36,10 @@ async function runESP() {
                 progress: bar.toString(),
             }
             client.publish('OTAUpdate/klien', JSON.stringify(pesan))
-            if (bar == 100) clearInterval(updating)
+            if (bar == 100) {
+                version += 1
+                clearInterval(updating)
+            }
             bar += 10
         }, 1000)
     }

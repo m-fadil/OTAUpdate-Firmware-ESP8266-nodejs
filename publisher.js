@@ -18,7 +18,7 @@ client.on('connect', () => {
     client.subscribe(topic, () => {
         console.log(`Subscribe to topic '${topic}'`)
     })
-    client.publish('OTAUpdate/esp', 'cek')
+    client.publish('OTAUpdate/esp', 'check')
 })
 
 client.on('message', (topic, message) => {

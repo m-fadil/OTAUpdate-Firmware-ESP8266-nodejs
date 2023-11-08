@@ -6,8 +6,7 @@ async function startKlien() {
     const host = 'mqtt.eclipseprojects.io'
     const port = '1883'
     const subsTopic = 'OTAUpdate/klien'
-    const ESPList = []
-    const updatingList = {}
+    const espList = []
     
     const clientId = `ESP-${Math.random().toString(16).toUpperCase().slice(3)}`
     const connectUrl = `${protocol}://${host}:${port}`
@@ -19,23 +18,30 @@ async function startKlien() {
     })
 
     function cekESP() {
-        ESPList.length = 0
+        espList.length = 0
         return new Promise((resolve, reject) => {
             client.subscribe(subsTopic)
             client.publish('OTAUpdate/esp', 'check')
             setTimeout(() => {
                 resolve()
-            }, 1500)
+            }, 2000)
         })
     }
 
     async function updating(pesan) {
-        updatingList[pesan.espId] = pesan.progress
         console.clear()
-        Object.entries(updatingList).forEach(([key, value]) => {
-            console.log(`${key}\n[${'#'.repeat(Math.round(Number(value)/5))}${'.'.repeat(20-Math.round(Number(value)/5))}] - ${value}%\n`)
-        });
-        if (Object.values(updatingList).every(value => value == '100')) {
+        for (const i in espList) {
+            if (espList[i].espId == pesan.espId) {
+                espList[i]['progress'] = pesan.progress
+            }
+        }
+        for (const i in espList) {
+            if (espList[i].hasOwnProperty('progress')) {
+                console.log(`${espList[i].espId}\n[${'#'.repeat(Math.round(Number(espList[i].progress)/5))}${'.'.repeat(20-Math.round(Number(espList[i].progress)/5))}] - ${espList[i].progress}%\n`)
+            }
+        }
+
+        if (espList.every(esp => !esp.hasOwnProperty("progress") || esp.progress === '100')) {
             var _ = prompt('Tekan ENTER untuk melanjutkan...')
             menu()
         }
@@ -44,36 +50,46 @@ async function startKlien() {
     async function menu() {
         await cekESP()
         console.clear()
-        for (const [index, value] of ESPList.entries()) {
-            console.log(`${index + 1}. ${value}`)
-        }
-        console.log('\n0. keluar\nMasukkan urutan ESP untuk di update')
+        espList.forEach((esp, index) => {
+            console.log(`${index+1}. ${esp.espId} version: ${esp.version}`)
+        })
+        console.log('\n(r) Muat ulang\n(q) Keluar\nMasukkan urutan ESP untuk di update')
         let pilih = prompt('-> ')
-        if (pilih == 0) {
+        if (pilih == 'r' || pilih == 'R') {
+            menu()
+        }
+        else if (pilih == 'q' || pilih == 'Q') {
             process.exit(0)
-        } else {
+        }
+        else if (parseInt(pilih, 10) > 0 ) {
             if (pilih.length <= 1) {
-                client.publish('OTAUpdate/esp', ESPList[pilih - 1])
+                client.publish('OTAUpdate/esp', espList[pilih - 1].espId)
             }else {
                 let urutan = new Set(pilih.split(' ').join('').split(','))
                 urutan.forEach((i) => {
-                    client.publish('OTAUpdate/esp', ESPList[i - 1])
+                    client.publish('OTAUpdate/esp', espList[i - 1].espId)
                 })
             }
+        }
+        else {
+            menu()
         }
     }
 
     function handling(pesan) {
         if (pesan.command == 'checked') {
             process.stdout.write('.')
-            ESPList.push(pesan.espId)
+            espList.push({
+                espId: pesan.espId,
+                version: pesan.version,
+            })
         }
         else if (pesan.command == 'updating') {
             updating(pesan)
         }
     }
     
-    client.on('connect', () => {
+    client.on('connect', async () => {
         console.log('Connected')
         menu()
     })

@@ -30,18 +30,18 @@ async function runESP() {
         var bar = 0
 
         const updating = setInterval(() => {
-            let pesan = {
-                command: 'updating',
-                espId: clientId,
-                progress: bar.toString(),
-            }
-            client.publish('OTAUpdate/klien', JSON.stringify(pesan))
             if (bar == 100) {
+                let pesan = {
+                    command: 'update',
+                    espId: clientId,
+                    progress: 'success',
+                }
                 version += 1
+                client.publish('OTAUpdate/klien', JSON.stringify(pesan))
                 clearInterval(updating)
             }
             bar += 10
-        }, 1000)
+        }, 500)
     }
 
     function cek() {
@@ -71,6 +71,12 @@ async function runESP() {
             cek()
         }
         else if (strMessage == clientId) {
+            let pesan = {
+                command: 'update',
+                espId: clientId,
+                progress: 'updating',
+            }
+            client.publish('OTAUpdate/klien', JSON.stringify(pesan))
             update()
         }
     })

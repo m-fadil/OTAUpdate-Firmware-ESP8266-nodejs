@@ -30,42 +30,38 @@ async function startKlien() {
         })
     }
 
-    async function updating(pesan) {
-        console.clear()
-        for (const i in espList) {
-            if (espList[i].espId == pesan.espId) {
-                espList[i]['progress'] = pesan.progress
+    function updateStatus() {
+        const updating = setInterval(() => {
+            console.clear()
+            for (const i in espList) {
+                if (espList[i].hasOwnProperty('progress')) {
+                    console.log(`${i+1}. ${espList[i].espId} [${espList[i].progress}]\n`)
+                }
             }
-        }
-        for (const i in espList) {
-            if (espList[i].hasOwnProperty('progress')) {
-                const totalProgress = espList[i].total;
-                const currentProgress = espList[i].progress;
+            console.log('Tekan ENTER untuk kembali')
+        }, 100)
 
-                const progressPercentage = (currentProgress / totalProgress) * 100;
-                const barLength = Math.round(progressPercentage / 5);
-                const remainingLength = 20 - barLength;
-
-                console.log(`${espList[i].espId}\n[${"#".repeat(barLength)}${".".repeat(remainingLength)}] - ${progressPercentage.toFixed(2)}%\n`);
+        process.stdin.on('data', function (data) {
+            if (data.toString().trim() === '') {
+                clearInterval(updating);
+                menu();
             }
-        }
-
-        if (espList.every(esp => !esp.hasOwnProperty("progress") || esp.progress === '100')) {
-            var _ = prompt('Tekan ENTER untuk melanjutkan...')
-            menu()
-        }
+        });
     } 
     
     async function menu() {
-        await cekESP()
         console.clear()
         espList.forEach((esp, index) => {
             console.log(`${index+1}. ${esp.espId} version: ${esp.version}`)
         })
-        console.log('\n(r) Muat ulang\n(q) Keluar\nMasukkan urutan ESP untuk di update')
+        console.log('\n(r) Muat ulang\n(c) Cek status update\n(q) Keluar\nMasukkan urutan ESP untuk di update')
         let pilih = prompt('-> ')
         if (pilih == 'r' || pilih == 'R') {
+            await cekESP()
             menu()
+        }
+        else if (pilih == 'c' || pilih == 'C') {
+            updateStatus()
         }
         else if (pilih == 'q' || pilih == 'Q') {
             process.exit(0)
@@ -79,6 +75,7 @@ async function startKlien() {
                     client.publish(topic_pub, espList[i - 1].espId)
                 })
             }
+            updateStatus()
         }
         else {
             menu()
@@ -93,13 +90,18 @@ async function startKlien() {
                 version: pesan.version,
             })
         }
-        else if (pesan.command == 'updating') {
-            updating(pesan)
+        else if (pesan.command == 'update') {
+            for (const i in espList) {
+                if (espList[i].espId == pesan.espId) {
+                    espList[i]['progress'] = pesan.progress
+                }
+            }
         }
     }
     
     client.on('connect', async () => {
         console.log('Connected')
+        await cekESP()
         menu()
     })
     

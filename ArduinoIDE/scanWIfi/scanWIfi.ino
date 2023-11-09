@@ -1,25 +1,27 @@
 #include <ESP8266WiFi.h>
 
-const char* ssid = "DESKTOP";
-const char* password = "K7o75*12";
-
 void setup() {
   Serial.begin(115200);
-  delay(10);
 
-  // Menghubungkan ke jaringan Wi-Fi
+  // Mulai WiFi mode pemindaian
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  
+  // Mulai pemindaian WiFi
+  Serial.println("Memulai pemindaian WiFi...");
+  int networksFound = WiFi.scanNetworks();
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print("Koneksi ke Wi-Fi dengan ssid ");
-    Serial.println(ssid);
+  // Cek apakah ada jaringan WiFi yang ditemukan
+  if (networksFound == 0) {
+    Serial.println("Tidak ada jaringan WiFi yang ditemukan.");
+  } else {
+    Serial.printf("%d jaringan WiFi ditemukan:\n", networksFound);
+    // Tampilkan informasi setiap jaringan WiFi yang ditemukan
+    for (int i = 0; i < networksFound; ++i) {
+      Serial.printf("%d: %s (Signal: %d dBm)\n", i + 1, WiFi.SSID(i).c_str(), WiFi.RSSI(i));
+    }
   }
-
-  Serial.println("Terhubung ke Wi-Fi");
 }
 
 void loop() {
-  // Kode aplikasi Anda
+  // Tidak ada tindakan di loop
 }

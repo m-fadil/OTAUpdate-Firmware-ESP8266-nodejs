@@ -3,9 +3,10 @@ const prompt = require('prompt-sync')();
 
 async function startKlien() {
     const protocol = 'mqtt'
-    const host = 'mqtt.eclipseprojects.io'
+    const host = '192.168.1.71'
     const port = '1883'
-    const subsTopic = 'OTAUpdate/klien'
+    const topic_pub = 'OTAUpdate/esp'
+    const topic_sub = 'OTAUpdate/klien'
     const espList = []
     
     const clientId = `ESP-${Math.random().toString(16).toUpperCase().slice(3)}`
@@ -20,8 +21,9 @@ async function startKlien() {
     function cekESP() {
         espList.length = 0
         return new Promise((resolve, reject) => {
-            client.subscribe(subsTopic)
-            client.publish('OTAUpdate/esp', 'check')
+            client.subscribe(topic_sub)
+            client.subscribe(topic_sub)
+            client.publish(topic_pub, 'check')
             setTimeout(() => {
                 resolve()
             }, 2000)
@@ -37,7 +39,14 @@ async function startKlien() {
         }
         for (const i in espList) {
             if (espList[i].hasOwnProperty('progress')) {
-                console.log(`${espList[i].espId}\n[${'#'.repeat(Math.round(Number(espList[i].progress)/5))}${'.'.repeat(20-Math.round(Number(espList[i].progress)/5))}] - ${espList[i].progress}%\n`)
+                const totalProgress = espList[i].total;
+                const currentProgress = espList[i].progress;
+
+                const progressPercentage = (currentProgress / totalProgress) * 100;
+                const barLength = Math.round(progressPercentage / 5);
+                const remainingLength = 20 - barLength;
+
+                console.log(`${espList[i].espId}\n[${"#".repeat(barLength)}${".".repeat(remainingLength)}] - ${progressPercentage.toFixed(2)}%\n`);
             }
         }
 
@@ -63,11 +72,11 @@ async function startKlien() {
         }
         else if (parseInt(pilih, 10) > 0 ) {
             if (pilih.length <= 1) {
-                client.publish('OTAUpdate/esp', espList[pilih - 1].espId)
+                client.publish(topic_pub, espList[pilih - 1].espId)
             }else {
                 let urutan = new Set(pilih.split(' ').join('').split(','))
                 urutan.forEach((i) => {
-                    client.publish('OTAUpdate/esp', espList[i - 1].espId)
+                    client.publish(topic_pub, espList[i - 1].espId)
                 })
             }
         }

@@ -1,7 +1,7 @@
 const mqtt = require("mqtt");
 
 const protocol = 'mqtt'
-const host = "mqtt.eclipseprojects.io"
+const host = "192.168.1.71"
 const port = '1883'
 const topic = ["OTAUpdate/klien",]
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`
@@ -22,7 +22,11 @@ client.on('connect', () => {
 })
 
 client.on('message', (topic, message) => {
-    let msg = JSON.parse(message)
+    try {
+        var msg = JSON.parse(message)
+    } catch {
+        var msg = message.toString()
+    }
     console.log(msg)
     // message is a Buffer
     // let strMessage = message.toString();

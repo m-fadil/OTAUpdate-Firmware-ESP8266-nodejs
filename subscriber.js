@@ -2,7 +2,7 @@ const mqtt = require("mqtt");
 
 async function runESP() {
     const protocol = 'mqtt'
-    const host = "mqtt.eclipseprojects.io"
+    const host = "192.168.1.71"
     const port = '1883'
     const clientId = `ESP-${Math.random().toString(16).toUpperCase().slice(9)}`
     const subsTopic = "OTAUpdate/esp"

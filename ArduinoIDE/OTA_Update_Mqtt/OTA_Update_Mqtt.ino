@@ -4,12 +4,13 @@
 #include <ESP8266httpUpdate.h>
 #include <ArduinoJson.h>
 
-const char* ssid = "DESKTOP";
-const char* password = "TmzXgd4Z";
-#define mqtt_server "mqtt.eclipseprojects.io"  //Alamat broker MQTT
-#define mqtt_topic "OTAUpdate/esp"
+#define ssid "DESKTOP"
+#define password "TmzXgd4Z"
+#define mqtt_server "192.168.1.71"  //Alamat broker MQTT
+#define mqtt_topic_pub "OTAUpdate/klien"
+#define mqtt_topic_sub "OTAUpdate/esp"
 #define espId "ESP-Sensor_Suhu"
-#define FIRMWARE_VERSION "0.1"
+#define FIRMWARE_VERSION "0.2"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -31,14 +32,12 @@ void setup_wifi() {
 
 void update_firmware() {
   Serial.println(F("Update start now!"));
-
-  t_httpUpdate_return ret = ESPhttpUpdate.update(espClient, "192.168.246.27", 3000, "/firmware/httpUpdateNew.bin");
+  
+  t_httpUpdate_return ret = ESPhttpUpdate.update(espClient, "192.168.1.71", 3000, "/firmware/httpUpdateNew.bin");
 
   switch (ret) {
     case HTTP_UPDATE_FAILED:
       Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-      Serial.println(F("Retry in 10secs!"));
-      delay(10000); // Wait 10secs
       break;
 
     case HTTP_UPDATE_NO_UPDATES:
@@ -86,7 +85,7 @@ void handling(char* topic, byte* payload, unsigned int length) {
     doc["version"] = FIRMWARE_VERSION;
     String jsonString;
     serializeJson(doc, jsonString);
-    client.publish("OTAUpdate/klien", jsonString.c_str());
+    client.publish(mqtt_topic_pub, jsonString.c_str());
   }
   else if (message == espId) {
     update_firmware();
@@ -116,7 +115,7 @@ void reconnect() {
     Serial.println("Attempting MQTT connection...");
     if (client.connect("OTAUpdateMqttESP8266Client")) {
       Serial.println("connected");
-      client.subscribe(mqtt_topic);
+      client.subscribe(mqtt_topic_sub);
       status();
     } else {
       Serial.print("failed, rc=");
@@ -138,8 +137,6 @@ void setup() {
   ESPhttpUpdate.onProgress(update_progress);
   ESPhttpUpdate.onError(update_error);
   ESPhttpUpdate.rebootOnUpdate(false); // remove automatic update
-
-  status();
 }
 
 void loop() {
